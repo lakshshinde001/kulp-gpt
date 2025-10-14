@@ -28,11 +28,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(newConversation[0]);
   } catch (error) {
     console.error('Error creating conversation:', error);
-    console.error('Error details:', error.message);
-    console.error('Error stack:', error.stack);
+    console.error('Error details:', (error as Error).message);
+    console.error('Error stack:', (error as Error).stack);
     return NextResponse.json({
       error: 'Failed to create conversation',
-      details: error.message
+      details: (error as Error).message
     }, { status: 500 });
   }
 }
