@@ -21,8 +21,8 @@ async function testConversationCreation() {
 
   } catch (error) {
     console.error('Error:', error)
-    console.error('Error message:', error.message)
-    console.error('Error stack:', error.stack)
+    console.error('Error message:', (error as Error).message)
+    console.error('Error stack:', (error as Error).stack)
   }
 }
 
