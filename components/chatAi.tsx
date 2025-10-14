@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useRef, useEffect } from "react";
+import ReactMarkdown from 'react-markdown';
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
 import { Send, Menu, Voicemail, Mic } from "lucide-react";
@@ -42,7 +43,7 @@ const ChatAi = () => {
   };
 
   return (
-    <div className="flex h-screen bg-gradient-to-t from-neutral-950 via-neutral-900 to-red-950">
+    <div className="flex h-[100dvh] bg-gradient-to-t from-neutral-950 via-neutral-900 to-red-950">
       <div className="flex-1 flex flex-col">
         
         <div className="flex-1 overflow-y-auto p-4 pb-20">
@@ -72,10 +73,18 @@ const ChatAi = () => {
                     className={`px-4 py-2  max-w-[75%] break-words ${
                       m.role === "user"
                         ? "bg-neutral-900 text-white ml-12 rounded-full"
-                        : " text-neutral-200 mr-12"
+                        : " text-neutral-400 mr-12"
                     }`}
                   >
-                    {m.content}
+                    {m.role === "user" ? (
+                      m.content
+                    ) : (
+                      <div className="prose prose-invert max-w-none prose-sm bg-neutral-900 rounded-lg p-4">
+                        <ReactMarkdown>
+                          {m.content}
+                        </ReactMarkdown>
+                      </div>
+                    )}
                   </div>
                 </div>
               ))

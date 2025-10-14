@@ -93,7 +93,7 @@ const Sidebar = () => {
       {isMobile && (
         <button
           onClick={toggleSidebar}
-          className="fixed top-4 left-4 z-50 p-2  rounded-lg cursor-pointer transition-colors md:hidden"
+          className="fixed top-4 left-4 z-50 p-2  rounded-lg transition-colors md:hidden"
         >
           <Menu size={20} className="text-neutral-300" />
         </button>
@@ -110,8 +110,8 @@ const Sidebar = () => {
       <motion.div
         className={`${
           isMobile
-            ? 'fixed top-0 left-0 z-50 h-screen bg-gradient-to-t from-neutral-950 via-neutral-900 to-red-950 border-r border-neutral-700'
-            : 'flex-shrink-0 flex flex-col justify-between h-screen bg-gradient-to-t from-neutral-950 via-neutral-900 to-red-950 border-r border-neutral-700 overflow-hidden'
+            ? 'fixed top-0 left-0 z-50 h-[100dvh] flex flex-col bg-gradient-to-t from-neutral-950 via-neutral-900 to-red-950 border-r border-neutral-700'
+            : 'flex-shrink-0 flex flex-col justify-between h-[100dvh] bg-gradient-to-t from-neutral-950 via-neutral-900 to-red-950 border-r border-neutral-700 overflow-hidden'
         }`}
         variants={variants}
         initial="closed"
@@ -128,7 +128,7 @@ const Sidebar = () => {
         }}
       >
     
-        <div className={`flex items-center ${sidebarOpen ? 'justify-between' : 'justify-center'} p-4`}>
+        <div className={`flex-shrink-0 flex items-center ${sidebarOpen ? 'justify-between' : 'justify-center'} p-4`}>
             {sidebarOpen && (
               <h1 className='text-neutral-200 text-xl font-semibold'>
                   KulpGPT
@@ -143,7 +143,7 @@ const Sidebar = () => {
         </div>
 
       
-        <div className='flex-1 overflow-y-auto'>
+        <div className={`flex-1  min-h-0 ${sidebarOpen ? 'overflow-y-auto' : 'overflow-hidden'}`}>
             <div className={`${sidebarOpen ? 'px-4' : 'px-2'} py-2`}>
                 <button
                     onClick={handleNewConversation}
@@ -161,10 +161,10 @@ const Sidebar = () => {
                       Recent Chats
                   </h3>
               </div>
-            )} 
+            )}
 
             <div className={`${sidebarOpen ? 'px-4' : 'px-2'} pb-4`}>
-                { sidebarOpen && isLoading && conversations.length === 0 ? (
+                { isLoading && conversations.length === 0 ? (
                     <div className="space-y-2">
                         {[...Array(3)].map((_, i) => (
                             <div key={i} className="animate-pulse">
@@ -213,13 +213,13 @@ const Sidebar = () => {
         </div>
 
     
-          <div className='flex p-4 gap-2 items-center justify-start border-t border-neutral-700'>
-              <div className='h-8 w-8 bg-neutral-600 rounded-full flex items-center justify-center'>
+          <div className='flex-shrink-0 flex p-4 gap-2 items-center justify-start border-t border-neutral-700'>
+              <div className='h-8 w-8 bg-neutral-600 rounded-full flex items-center justify-center flex-shrink-0'>
                   <span className='text-sm font-semibold text-white'>K</span>
               </div>
-               {sidebarOpen && <div className='flex flex-col gap-1 text-sm'>
-                  <p className='text-neutral-200'>Kulp Dev</p>
-                  <p className='text-xs text-neutral-400'>Plus User</p>
+               {sidebarOpen && <div className='flex flex-col gap-1 text-sm min-w-0 flex-1'>
+                  <p className='text-neutral-200 truncate'>Kulp Dev</p>
+                  <p className='text-xs text-neutral-400 truncate'>Plus User</p>
               </div>}
           </div>
      
