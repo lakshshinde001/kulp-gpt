@@ -1,14 +1,16 @@
 "use client"
 
-import { SidebarClose, MessageSquarePlus, Menu } from 'lucide-react'
+import { SidebarClose, MessageSquarePlus, Menu, User } from 'lucide-react'
 import React, { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useChatStore } from '../stores/chatStore'
+import { useUserStore } from '../stores/userStore'
 import { motion, stagger } from 'motion/react'
 
 const Sidebar = () => {
     const router = useRouter()
     const { conversations, currentConversationId, loadConversations, createConversation, switchConversation, sidebarOpen, toggleSidebar, isLoading, setSidebarOpen } = useChatStore()
+    const { user } = useUserStore()
 
     // Check if we're on mobile
     const [isMobile, setIsMobile] = React.useState(false)
@@ -214,13 +216,31 @@ const Sidebar = () => {
 
     
           <div className='flex-shrink-0 flex p-4 gap-2 items-center justify-start border-t border-neutral-700'>
-              <div className='h-8 w-8 bg-neutral-600 rounded-full flex items-center justify-center flex-shrink-0'>
-                  <span className='text-sm font-semibold text-white'>K</span>
-              </div>
-               {sidebarOpen && <div className='flex flex-col gap-1 text-sm min-w-0 flex-1'>
-                  <p className='text-neutral-200 truncate'>Kulp Dev</p>
-                  <p className='text-xs text-neutral-400 truncate'>Plus User</p>
-              </div>}
+              <button
+                  onClick={() => router.push('/profile')}
+                  className='flex items-center gap-2 flex-1 hover:bg-neutral-800 rounded-lg p-2 -m-2 transition-colors'
+                  title={sidebarOpen ? '' : 'Profile'}
+              >
+                  <div className='h-8 w-8 bg-primary/20 rounded-full flex items-center justify-center flex-shrink-0'>
+                      {user ? (
+                          <span className='text-sm font-semibold text-primary'>
+                              {user.name.charAt(0).toUpperCase()}
+                          </span>
+                      ) : (
+                          <User size={16} className='text-primary' />
+                      )}
+                  </div>
+                  {sidebarOpen && (
+                      <div className='flex flex-col gap-1 text-sm min-w-0 flex-1 text-left'>
+                          <p className='text-neutral-200 truncate'>
+                              {user ? user.name : 'Guest'}
+                          </p>
+                          <p className='text-xs text-neutral-400 truncate'>
+                              {user ? 'Pro User' : 'Sign In'}
+                          </p>
+                      </div>
+                  )}
+              </button>
           </div>
      
       </motion.div>

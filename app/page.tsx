@@ -3,9 +3,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useChatStore } from '../stores/chatStore';
-import { Input } from '../components/ui/input';
-import { Send, Mic } from 'lucide-react';
 import Sidebar from '../components/Sidebar';
+import ChatInput from '../components/ChatInput';
 
 export default function Home() {
   const router = useRouter();
@@ -19,7 +18,6 @@ export default function Home() {
 
   const onChangeHandler = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInput(e.target.value);
-    inputRef.current?.focus();
   };
 
   const handleSubmit = async () => {
@@ -28,21 +26,29 @@ export default function Home() {
     try {
 
       const newConversation = await useChatStore.getState().createConversation('New Chat');
- 
+
       useChatStore.getState().setCurrentConversationId(newConversation.id);
 
       setIsCreating(false);
       router.push(`/conversations/${newConversation.id}`);
       await sendMessage(input);
-  
-     
-     
-      
+
+
+
+
+
+
     } catch (error) {
       console.error('Failed to send message:', error);
     } finally {
-      
+
     }
+  };
+
+  const handleImageAttach = (files: File[]) => {
+    // TODO: Implement image attachment functionality
+    console.log('Attached images:', files);
+    // You can store the files in state or send them directly to the API
   };
 
   return (
@@ -74,43 +80,16 @@ export default function Home() {
               </p>
               <div className="flex-shrink-0 p-4">
                 <div className="relative w-[300px] sm:w-[400px] md:w-[500px] lg:w-[600px] mx-auto">
-                  <div className="relative">
-                    <Input
-                      type="text"
-                      placeholder="Ask kulp.."
-                      onChange={onChangeHandler}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" && !e.shiftKey) {
-                          e.preventDefault();
-                          handleSubmit();
-                        }
-                      }}
-                      value={input}
-                      ref={inputRef}
-                      disabled={isLoading || isCreating}
-                      className="w-full pr-12 pl-4 h-12 text-base rounded-full"
-                    />
-
-                    {input.length < 1 && (
-                      <button
-                        type="button"
-                        disabled={isLoading || isCreating}
-                        className="absolute right-12 top-1/2 -translate-y-1/2 h-8 w-8 flex items-center justify-center rounded-full bg-neutral-800 hover:bg-neutral-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                        title="Voice input (not implemented)"
-                      >
-                        <Mic className="h-4 w-4 text-neutral-300" />
-                      </button>
-                    )}
-
-                    <button
-                      type="button"
-                      onClick={handleSubmit}
-                      disabled={isLoading || isCreating}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 flex items-center justify-center rounded-full bg-neutral-800 hover:bg-neutral-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    >
-                      <Send className="h-4 w-4 text-neutral-300" />
-                    </button>
-                  </div>
+                  <ChatInput
+                    ref={inputRef}
+                    value={input}
+                    onChange={onChangeHandler}
+                    onSubmit={handleSubmit}
+                    onImageAttach={handleImageAttach}
+                    disabled={isLoading || isCreating}
+                    showVoiceButton={true}
+                    className="w-full pr-24 pl-4 h-12 text-base rounded-full"
+                  />
                 </div>
               </div>
             </div>
@@ -124,43 +103,15 @@ export default function Home() {
               </div>
               <div className="fixed bottom-4 left-4 right-4">
                 <div className="relative w-full">
-                  <div className="relative">
-                    <Input
-                      type="text"
-                      placeholder="Ask kulp.."
-                      onChange={onChangeHandler}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" && !e.shiftKey) {
-                          e.preventDefault();
-                          handleSubmit();
-                        }
-                      }}
-                      value={input}
-                      ref={inputRef}
-                      disabled={isLoading || isCreating}
-                      className="w-full pr-12 pl-4 h-12 text-base rounded-full"
-                    />
-
-                    {input.length < 1 && (
-                      <button
-                        type="button"
-                        disabled={isLoading || isCreating}
-                        className="absolute right-12 top-1/2 -translate-y-1/2 h-8 w-8 flex items-center justify-center rounded-full bg-neutral-800 hover:bg-neutral-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                        title="Voice input (not implemented)"
-                      >
-                        <Mic className="h-4 w-4 text-neutral-300" />
-                      </button>
-                    )}
-
-                    <button
-                      type="button"
-                      onClick={handleSubmit}
-                      disabled={isLoading || isCreating}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 flex items-center justify-center rounded-full bg-neutral-800 hover:bg-neutral-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    >
-                      <Send className="h-4 w-4 text-neutral-300" />
-                    </button>
-                  </div>
+                  <ChatInput
+                    value={input}
+                    onChange={onChangeHandler}
+                    onSubmit={handleSubmit}
+                    onImageAttach={handleImageAttach}
+                    disabled={isLoading || isCreating}
+                    showVoiceButton={true}
+                    className="w-full pr-24 pl-4 h-12 text-base rounded-full"
+                  />
                 </div>
               </div>
             </div>

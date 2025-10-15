@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import ReactMarkdown from 'react-markdown';
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
-import { Send, Menu, Voicemail, Mic } from "lucide-react";
+import { Menu, Voicemail, ChevronDown, ChevronRight } from "lucide-react";
 import { useChatStore } from "../stores/chatStore";
+import ChatInput from "./ChatInput";
 
 const ChatAi = () => {
   const {
@@ -19,8 +20,18 @@ const ChatAi = () => {
     toggleSidebar,
   } = useChatStore();
 
+  const [collapsedReasoning, setCollapsedReasoning] = useState<Map<number, boolean>>(new Map());
+
   const inputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const toggleReasoning = (messageId: number) => {
+    setCollapsedReasoning(prev => {
+      const newMap = new Map(prev);
+      newMap.set(messageId, !newMap.get(messageId));
+      return newMap;
+    });
+  };
 
  
   useEffect(() => {
@@ -33,13 +44,18 @@ const ChatAi = () => {
 
   const onChangeHandler = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInput(e.target.value);
-    inputRef.current?.focus();
   };
 
   const handleSubmit = async () => {
     if (!input.trim() || isLoading) return;
     await sendMessage(input);
     inputRef.current?.focus();
+  };
+
+  const handleImageAttach = (files: File[]) => {
+    // TODO: Implement image attachment functionality
+    console.log('Attached images:', files);
+    // You can store the files in state or send them directly to the API
   };
 
   return (
@@ -79,10 +95,36 @@ const ChatAi = () => {
                     {m.role === "user" ? (
                       m.content
                     ) : (
-                      <div className="prose prose-invert max-w-none prose-sm bg-neutral-900 rounded-lg p-4">
-                        <ReactMarkdown>
-                          {m.content}
-                        </ReactMarkdown>
+                      <div className="space-y-3">
+                        {m.reasoning && (
+                          <div className="bg-neutral-800 rounded-lg ">
+                            <button
+                              onClick={() => toggleReasoning(m.id)}
+                              className="w-full flex items-center justify-between p-3 hover:bg-neutral-700 transition-colors rounded-lg"
+                            >
+                              <div className="text-xs text-blue-400 font-medium">
+                                Thinking{m.duration ? ` for ${m.duration}` : '...'}
+                              </div>
+                              {collapsedReasoning.get(m.id) !== false ? (
+                                <ChevronRight className="w-4 h-4 text-blue-400" />
+                              ) : (
+                                <ChevronDown className="w-4 h-4 text-blue-400" />
+                              )}
+                            </button>
+                            {collapsedReasoning.get(m.id) === false && (
+                              <div className="px-3 pb-3">
+                                <div className="text-neutral-300 italic prose prose-invert max-w-none prose-sm">
+                                  {m.reasoning }
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        <div className="prose prose-invert max-w-none prose-sm bg-neutral-900 rounded-lg p-4">
+                          <ReactMarkdown>
+                            {m.content}
+                          </ReactMarkdown>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -96,44 +138,15 @@ const ChatAi = () => {
                 <div className="flex-shrink-0 p-4 ">
                   <div className="">
                     <div className="relative w-[300px] sm:w-[400px] md:w-[500px] lg:w-[600px] mx-auto">
-                      <div className="relative">
-                        <Input
-                          type="text"
-                          placeholder="Ask kulp.."
-                          onChange={onChangeHandler}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter" && !e.shiftKey) {
-                              e.preventDefault();
-                              handleSubmit();
-                            }
-                          }}
-                          value={input}
-                          ref={inputRef}
-                          disabled={isLoading}
-                          className="w-full pr-12 pl-4 h-12 text-base rounded-full"
-                          autoFocus={false}
-                        />
-
-                        {input.length < 1 && (
-                          <button
-                            type="button"
-                            disabled={isLoading}
-                            className="absolute right-12 top-1/2 -translate-y-1/2 h-8 w-8 flex items-center justify-center rounded-full bg-neutral-800 hover:bg-neutral-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                            title="Voice input (not implemented)"
-                          >
-                            <Mic className="h-4 w-4 text-neutral-300" />
-                          </button>
-                        )}
-
-                        <button
-                          type="button"
-                          onClick={handleSubmit}
-                          disabled={isLoading}
-                          className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 flex items-center justify-center rounded-full bg-neutral-800 hover:bg-neutral-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                        >
-                          <Send className="h-4 w-4 text-neutral-300" />
-                        </button>
-                      </div>
+                      <ChatInput
+                        value={input}
+                        onChange={onChangeHandler}
+                        onSubmit={handleSubmit}
+                        onImageAttach={handleImageAttach}
+                        disabled={isLoading}
+                        showVoiceButton={true}
+                        className="w-full pr-24 pl-4 h-12 text-base rounded-full"
+                      />
                     </div>
                   </div>
                 </div>
@@ -148,31 +161,15 @@ const ChatAi = () => {
         {messages.length > 0 && (
           <div className="flex-shrink-0 p-4">
             <div className="max-w-4xl mx-auto">
-              <div className="relative">
-                <Input
-                  type="text"
-                  placeholder="Ask kulp.."
-                  onChange={onChangeHandler}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
-                      e.preventDefault();
-                      handleSubmit();
-                    }
-                  }}
-                  value={input}
-                  ref={inputRef}
-                  disabled={isLoading}
-                  className="w-full pr-12 pl-4 h-12 text-base rounded-full"
-                />
-                <button
-                  type="button"
-                  onClick={handleSubmit}
-                  disabled={isLoading}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 flex items-center justify-center rounded-full bg-neutral-800 hover:bg-neutral-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  <Send className="h-4 w-4 text-neutral-300" />
-                </button>
-              </div>
+              <ChatInput
+                ref={inputRef}
+                value={input}
+                onChange={onChangeHandler}
+                onSubmit={handleSubmit}
+                onImageAttach={handleImageAttach}
+                disabled={isLoading}
+                showVoiceButton={false}
+              />
             </div>
           </div>
         )}

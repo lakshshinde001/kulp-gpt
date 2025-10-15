@@ -1,54 +1,97 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { GoogleGenerativeAI } from '@google/generative-ai'
-import { db } from '@/src/db/client'
-import { messages } from '@/src/db/schema'
+import { createOpenRouter } from '@openrouter/ai-sdk-provider';
+import { streamText,  } from 'ai';
+import { db } from '@/src/db/client';
+import { messages } from '@/src/db/schema';
 
-// Initialize Google Generative AI
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY!)
 
-// Configure Gemini model
-const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' })
 
-export async function POST(request: NextRequest) {
-  try {
-    const { message, conversationId = 1, userId } = await request.json()
 
-    if (!message) {
-      return NextResponse.json({ error: 'Message is required' }, { status: 400 })
-    }
+const openrouter = createOpenRouter({
+  apiKey: process.env.OPENROUTER_KEY!,
+});
 
-    if (!userId) {
-      return NextResponse.json({ error: 'userId is required' }, { status: 400 })
-    }
 
-    // Generate AI response using Gemini
-    const prompt = `You are a helpful AI assistant. Respond to the following message in a friendly and helpful way:
+export async function POST(req: Request) {
+  const { message, conversationId, userId } = await req.json();
 
-User: ${message}
+   const model =openrouter.chat('z-ai/glm-4.5-air:free', {
+    usage: {
+      include: true,
+    },
+    reasoning: {
+      enabled: true,
+      effort: "medium",
+    },
+  });
 
-Assistant:`
+  let reasoningText = "";
+  let finalText = "";
 
-    const result = await model.generateContent(prompt)
-    const aiResponse = result.response.text()
+  const startTime = Date.now();
 
-    // Save AI response to database
-    const savedMessage = await db.insert(messages).values({
-      userId: Number(userId),
-      conversationId: Number(conversationId),
-      role: 'assistant',
-      content: aiResponse,
-    }).returning()
+  const result = await streamText({
+    model,
+    messages: [
+      { role: 'system', content: 'You are a helpful assistant.' },
+      { role: 'user', content: message },
+    ],
+    onChunk: async (chunk) => {
+      // Check the type of chunk and accumulate appropriately
+      switch (chunk.chunk.type) {
+        case 'reasoning-delta':
+          // console.log("reasoningText", chunk.chunk.text);
+          reasoningText += chunk.chunk.text ?? '';
+          break;
+        case 'text-delta':
+          // console.log("finalText", chunk.chunk.text);
+          finalText += chunk.chunk.text ?? '';
+          break;
+        default:
+          break;
+      }
+    },
+    onError: (error) => {
+      console.log("error", error);
+    },
+    onStepFinish: async (message) => {
+      const endTime = Date.now();
+      const durationMs = endTime - startTime; // duration in milliseconds
+      const durationSec = Math.round((durationMs / 1000) * 10) / 10; // duration in seconds, rounded to 1 decimal
+      console.log("duration (seconds)", durationSec);
 
-    return NextResponse.json({
-      message: savedMessage[0],
-      response: aiResponse
-    })
+      try {
+        const assistantMessage = {
+          userId: userId,
+          conversationId: conversationId,
+          role: "assistant",
+          content: finalText,
+          reasoning: reasoningText || null,
+          duration: durationMs,
+        };
+        await db.insert(messages).values(assistantMessage);
+        console.log("assistantMessage saved", finalText);
+      } catch (error) {
+        console.log("error", error);
+      }
+    },
 
-  } catch (error) {
-    console.error('AI Chat Error:', error)
-    return NextResponse.json(
-      { error: 'Failed to process AI request' },
-      { status: 500 }
-    )
-  }
+  });
+
+  //save final message in db as assistant message
+ 
+
+
+  
+
+  return result.toUIMessageStreamResponse();
+
+
+
 }
+
+
+
+
+
+
+
