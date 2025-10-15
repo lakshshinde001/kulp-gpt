@@ -7,6 +7,7 @@ async function seedUser() {
     const result = await db.insert(users).values({
       name: 'Demo User',
       email: 'demo@example.com',
+      password: 'password',
     }).returning()
 
     console.log('Dummy user created:', result[0])
