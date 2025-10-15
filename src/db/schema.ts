@@ -23,5 +23,6 @@ export const messages = pgTable("messages", {
   content: text("content").notNull(),
   reasoning: text("reasoning"),
   duration: integer("duration"), // duration in milliseconds
+  toolCalls: text("tool_calls"), // JSON string of tool calls array
   createdAt: timestamp("created_at").defaultNow().notNull(),
   });

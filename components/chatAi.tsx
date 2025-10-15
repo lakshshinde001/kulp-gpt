@@ -82,14 +82,14 @@ const ChatAi = () => {
                 <div
                   key={m.id}
                   className={`flex ${
-                    m.role === "user" ? "justify-end" : "justify-start"
+                    m.role === "user" ? "justify-end text-neutral-400" : "justify-start text-neutral-400"
                   }`}
                 >
                   <div
                     className={`px-4 py-2  max-w-[75%] break-words ${
                       m.role === "user"
-                        ? "bg-neutral-900 text-white ml-12 rounded-full"
-                        : " text-neutral-400 mr-12"
+                        ? "bg-neutral-900 text-neutral-300 ml-12 rounded-full"
+                        : " text-neutral-300 mr-12"
                     }`}
                   >
                     {m.role === "user" ? (
@@ -120,6 +120,16 @@ const ChatAi = () => {
                             )}
                           </div>
                         )}
+                          {m.toolCalls && m.toolCalls.length > 0 && (
+                            <div className="space-y-1">
+                              {m.toolCalls.map((toolCall) => (
+                                <div key={toolCall.id} className="text-xs text-neutral-400 font-medium flex items-center bg-neutral-800 rounded-lg px-3 py-2">
+                                  
+                                  {toolCall.name}
+                                </div>
+                              ))}
+                            </div>
+                          )}
                         <div className="prose prose-invert max-w-none prose-sm bg-neutral-900 rounded-lg p-4">
                           <ReactMarkdown>
                             {m.content}

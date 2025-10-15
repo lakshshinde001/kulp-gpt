@@ -5,7 +5,7 @@ import { eq } from 'drizzle-orm';
 
 export async function POST(request: NextRequest) {
   try {
-    const { userId, conversationId, role, content } = await request.json();
+    const { userId, conversationId, role, content, reasoning, toolCalls } = await request.json();
 
     if (!userId) {
       return NextResponse.json({ error: 'userId is required' }, { status: 400 });
@@ -16,6 +16,8 @@ export async function POST(request: NextRequest) {
       conversationId: Number(conversationId),
       role,
       content,
+      reasoning: reasoning || null,
+      toolCalls: toolCalls || null,
     }).returning();
 
     return NextResponse.json(newMessage[0]);

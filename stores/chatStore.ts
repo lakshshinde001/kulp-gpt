@@ -1,5 +1,20 @@
 import { create } from 'zustand'
 import { useUserStore } from './userStore'
+import { sendMessage } from '../functions/sendMessage'
+
+// Helper function to get current user ID
+const getCurrentUserId = () => {
+  const user = useUserStore.getState().user
+  return user?.id || 1 // fallback to 1 for demo purposes
+}
+
+interface ToolCall {
+  id: string
+  name: string
+  input?: any
+  output?: any
+  status: 'input' | 'output' | 'completed'
+}
 
 interface Message {
   id: number
@@ -10,8 +25,11 @@ interface Message {
   reasoning?: string
   duration?: string // thinking duration in seconds
   reasoningComplete?: boolean // whether reasoning phase is complete
+  toolCalls?: ToolCall[] // tool calls made during response generation
   createdAt: string
 }
+
+export type { Message, ToolCall };
 
 interface Conversation {
   id: number
@@ -47,11 +65,6 @@ interface ChatState {
   switchConversation: (conversationId: number) => Promise<void>
 }
 
-// Helper function to get current user ID
-const getCurrentUserId = () => {
-  const user = useUserStore.getState().user
-  return user?.id || 1 // fallback to 1 for demo purposes
-}
 
 export const useChatStore = create<ChatState>((set, get) => ({
   messages: [],
@@ -86,162 +99,20 @@ export const useChatStore = create<ChatState>((set, get) => ({
   setSidebarOpen: (open) => set({ sidebarOpen: open }),
 
   sendMessage: async (content: string) => {
-    const {
-      currentConversationId,
-      addMessage,
-      updateMessage,
-      removeMessage,
-      setInput,
-      setIsLoading,
-      createConversation,
-      setCurrentConversationId,
-    } = get();
-  
-    let activeConversationId = currentConversationId;
-    if (!activeConversationId) {
-      try {
-        const newConversation = await createConversation(`Chat ${new Date().toLocaleString()}`);
-        activeConversationId = newConversation.id;
-        setCurrentConversationId(activeConversationId);
-      } catch (error) {
-        console.error("Failed to create conversation:", error);
-        return;
-      }
-    }
-  
-    const userId = getCurrentUserId();
-  
-    // temporary user message
-    const tempMessage: Message = {
-      id: Date.now() * -1,
-      userId,
-      conversationId: activeConversationId,
-      role: "user",
-      content,
-      createdAt: new Date().toISOString(),
+    const actions = {
+      currentConversationId: get().currentConversationId,
+      addMessage: get().addMessage,
+      updateMessage: get().updateMessage,
+      removeMessage: get().removeMessage,
+      setInput: get().setInput,
+      setIsLoading: get().setIsLoading,
+      createConversation: get().createConversation,
+      setCurrentConversationId: get().setCurrentConversationId,
+      loadMessages: get().loadMessages,
+      getCurrentUserId,
     };
-  
-    addMessage(tempMessage);
-    setInput("");
-    setIsLoading(true);
-  
-    try {
-      // save user message in DB
-      const userResponse = await fetch("/api/messages", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userId,
-          conversationId: activeConversationId,
-          role: "user",
-          content,
-        }),
-      });
-  
-      if (!userResponse.ok) throw new Error("Failed to save message");
-      const savedUserMessage = await userResponse.json();
-      updateMessage(tempMessage.id, savedUserMessage);
-  
-      // now get AI response stream
-      const aiResponse = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          message: content,
-          conversationId: activeConversationId,
-          userId,
-        }),
-      });
-  
-      if (!aiResponse.ok || !aiResponse.body) throw new Error("AI response failed");
-  
 
-      // Create a placeholder assistant message
-      const aiMessageId = Date.now();
-      const assistantMessage: Message = {
-        id: aiMessageId,
-        userId: userId,
-        conversationId: activeConversationId,
-        role: "assistant",
-        content: "",
-        reasoning: "",
-        createdAt: new Date().toISOString(),
-      };
-
-      addMessage(assistantMessage);
-
-      // stream the structured response
-      const reader = aiResponse.body.getReader();
-      const decoder = new TextDecoder();
-      let done = false;
-      let buffer = '';
-      let updateTimeout: NodeJS.Timeout | null = null;
-
-      // Function to batch updates
-      const scheduleUpdate = () => {
-        if (updateTimeout) return; // Already scheduled
-        updateTimeout = setTimeout(() => {
-          updateMessage(aiMessageId, { ...assistantMessage });
-          updateTimeout = null;
-        }, 50); // Update every 50ms max
-      };
-
-      while (!done) {
-        const { value, done: readerDone } = await reader.read();
-        done = readerDone;
-
-        if (value) {
-          buffer += decoder.decode(value, { stream: true });
-
-          // Process complete lines
-          const lines = buffer.split('\n');
-          buffer = lines.pop() || ''; // Keep incomplete line in buffer
-          let hasUpdates = false;
-
-          for (const line of lines) {
-            if (line.trim() && line.startsWith('data: ')) {
-              try {
-                const data = JSON.parse(line.slice(6)); // Remove 'data: ' prefix
-
-                if (data.type === 'text-delta' && data.delta) {
-                  assistantMessage.content += data.delta;
-                  hasUpdates = true;
-                } else if (data.type === 'reasoning-delta' && data.delta) {
-                  assistantMessage.reasoning = (assistantMessage.reasoning || "") + data.delta;
-                  hasUpdates = true;
-                } else if (data.type === 'reasoning-end') {
-                  assistantMessage.reasoningComplete = true;
-                  hasUpdates = true;
-                }
-                // Handle other event types if needed (start, end, etc.)
-              } catch (error) {
-                console.error('Error parsing stream data:', error, line);
-              }
-            }
-          }
-
-          if (hasUpdates) {
-            scheduleUpdate();
-          }
-        }
-      }
-
-      // Final update to ensure all data is rendered
-      if (updateTimeout) {
-        clearTimeout(updateTimeout);
-      }
-      updateMessage(aiMessageId, { ...assistantMessage });
-
-      // Reload messages to get duration from database
-      setTimeout(() => {
-        get().loadMessages(activeConversationId);
-      }, 100);
-    } catch (error) {
-      console.error("Error in chat flow:", error);
-      removeMessage(tempMessage.id);
-    } finally {
-      setIsLoading(false);
-    }
+    await sendMessage(content, actions);
   },
   
 
@@ -256,10 +127,26 @@ export const useChatStore = create<ChatState>((set, get) => ({
       if (response.ok) {
         const rawMessages = await response.json()
         // Convert duration from milliseconds to seconds and format as string
-        const processedMessages = rawMessages.map((msg: any) => ({
-          ...msg,
-          duration: msg.duration ? `${Math.round((msg.duration / 1000) * 10) / 10}s` : undefined
-        }))
+        const processedMessages = rawMessages.map((msg: any) => {
+          console.log('Processing message:', msg.id, 'tool_calls field:', msg.tool_calls, 'toolCalls field:', msg.toolCalls);
+
+          let toolCalls;
+          try {
+            // Check both possible field names (tool_calls from DB, toolCalls from camelCase)
+            const toolCallsStr = msg.toolCalls || msg.tool_calls;
+            toolCalls = toolCallsStr ? JSON.parse(toolCallsStr) : undefined;
+            console.log('Parsed toolCalls for message', msg.id, ':', toolCalls);
+          } catch (error) {
+            console.error('Error parsing toolCalls for message', msg.id, ':', error);
+            toolCalls = undefined;
+          }
+
+          return {
+            ...msg,
+            duration: msg.duration ? `${Math.round((msg.duration / 1000) * 10) / 10}s` : undefined,
+            toolCalls
+          };
+        })
         setMessages(processedMessages)
       } else {
         console.error('Failed to load messages')

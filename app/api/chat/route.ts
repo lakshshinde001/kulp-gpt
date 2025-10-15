@@ -1,8 +1,9 @@
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
-import { streamText,  } from 'ai';
-import { db } from '@/src/db/client';
-import { messages } from '@/src/db/schema';
-
+import { stepCountIs, streamText } from 'ai';
+import { getCurrentTime } from '@/tools/tool.service';
+import { mcpToolsFromSmithery } from '@/lib/mcp';
+import { z } from 'zod';
+import { systemPrompt } from '@/lib/prompts';
 
 
 
@@ -14,7 +15,25 @@ const openrouter = createOpenRouter({
 export async function POST(req: Request) {
   const { message, conversationId, userId } = await req.json();
 
-   const model =openrouter.chat('z-ai/glm-4.5-air:free', {
+  // Initialize MCP client
+  const mcpClient = await mcpToolsFromSmithery();
+
+  // Local tools
+  const localTools = {
+    get_current_time: {
+      description: 'Returns the current UTC date and time as a string.',
+      inputSchema: z.object({}), // no input params
+      execute: async () => await getCurrentTime(),
+    },
+  };
+
+  // Merge MCP tools with local tools
+  const allTools = {
+    ...mcpClient.tools,
+    ...localTools,
+  };
+
+  const model = openrouter.chat('google/gemini-2.0-flash-lite-001', {
     usage: {
       include: true,
     },
@@ -24,74 +43,35 @@ export async function POST(req: Request) {
     },
   });
 
-  let reasoningText = "";
-  let finalText = "";
 
-  const startTime = Date.now();
 
-  const result = await streamText({
-    model,
-    messages: [
-      { role: 'system', content: 'You are a helpful assistant.' },
-      { role: 'user', content: message },
-    ],
-    onChunk: async (chunk) => {
-      // Check the type of chunk and accumulate appropriately
-      switch (chunk.chunk.type) {
-        case 'reasoning-delta':
-          // console.log("reasoningText", chunk.chunk.text);
-          reasoningText += chunk.chunk.text ?? '';
-          break;
-        case 'text-delta':
-          // console.log("finalText", chunk.chunk.text);
-          finalText += chunk.chunk.text ?? '';
-          break;
-        default:
-          break;
-      }
-    },
-    onError: (error) => {
-      console.log("error", error);
-    },
-    onStepFinish: async (message) => {
-      const endTime = Date.now();
-      const durationMs = endTime - startTime; // duration in milliseconds
-      const durationSec = Math.round((durationMs / 1000) * 10) / 10; // duration in seconds, rounded to 1 decimal
-      console.log("duration (seconds)", durationSec);
-
-      try {
-        const assistantMessage = {
-          userId: userId,
-          conversationId: conversationId,
-          role: "assistant",
-          content: finalText,
-          reasoning: reasoningText || null,
-          duration: durationMs,
-        };
-        await db.insert(messages).values(assistantMessage);
-        console.log("assistantMessage saved", finalText);
-      } catch (error) {
+  try {
+    const result = await streamText({
+      model,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: message },
+      ],
+      tools: allTools,
+      onError: async (error) => {
         console.log("error", error);
-      }
-    },
+        await mcpClient.close();
+      },
+      stopWhen: stepCountIs(5),
+      onStepFinish: async (message) => {
+        console.log("Streaming step finished");
+      },
+      onFinish: async (message) => {
+        console.log("Streaming finished");
+        await mcpClient.close();
+      },
+    });
 
-  });
-
-  //save final message in db as assistant message
- 
-
-
-  
-
-  return result.toUIMessageStreamResponse();
-
-
-
+    return result.toUIMessageStreamResponse();
+  } catch (error) {
+    console.error("Error in chat flow:", error);
+    await mcpClient.close();
+    throw error;
+  }
 }
-
-
-
-
-
-
 
