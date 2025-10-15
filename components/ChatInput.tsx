@@ -108,7 +108,7 @@ const ChatInput = forwardRef<HTMLInputElement, ChatInputProps>(({
         <button
           type="button"
           disabled={disabled}
-          className={`absolute ${onImageAttach ? 'right-20' : 'right-12'} top-1/2 -translate-y-1/2 h-8 w-8 flex items-center justify-center rounded-full bg-neutral-800 hover:bg-neutral-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors`}
+          className={`absolute ${onImageAttach ? 'right-22' : 'right-22'} top-1/2 -translate-y-1/2 h-8 w-8 flex items-center justify-center rounded-full bg-neutral-800 hover:bg-neutral-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors`}
           title="Voice input (not implemented)"
         >
           <Mic className="h-4 w-4 text-neutral-300" />
