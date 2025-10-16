@@ -183,19 +183,19 @@ const ChatAi = () => {
 
 
 
-          <div className="flex-shrink-0 p-4">
-            <div className="max-w-4xl mx-auto">
-              <ChatInput
-                ref={inputRef}
-                value={input}
-                onChange={onChangeHandler}
-                onSubmit={handleSubmit}
-                onImageAttach={handleImageAttach}
-                disabled={isLoading}
-                showVoiceButton={false}
-              />
-            </div>
+        <div className="flex-shrink-0 p-4 md:relative fixed bottom-0 left-0 right-0 bg-neutral-950 z-40 md:bg-transparent md:z-auto md:p-4">
+          <div className="max-w-4xl mx-auto md:mx-auto mx-4">
+            <ChatInput
+              ref={inputRef}
+              value={input}
+              onChange={onChangeHandler}
+              onSubmit={handleSubmit}
+              onImageAttach={handleImageAttach}
+              disabled={isLoading}
+              showVoiceButton={false}
+            />
           </div>
+        </div>
       
       </div>
     </div>

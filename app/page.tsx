@@ -9,10 +9,10 @@ import Header from '../components/Header';
 
 export default function Home() {
   const router = useRouter();
-  const { conversations, loadConversations, input, sendMessage, setInput, isLoading } = useChatStore();
+  const { conversations, loadConversations, sendMessage, isLoading } = useChatStore();
   const [isCreating, setIsCreating] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
-
+  const [input, setInput] = useState('');
   useEffect(() => {
     loadConversations();
   }, [loadConversations]);
@@ -23,20 +23,19 @@ export default function Home() {
 
   const handleSubmit = async () => {
     if (!input.trim() || isLoading) return;
-    setIsCreating(true);
-    try {
 
+   
+    try {
+       setIsCreating(true);
       const newConversation = await useChatStore.getState().createConversation('New Chat');
 
       useChatStore.getState().setCurrentConversationId(newConversation.id);
 
-      setIsCreating(false);
+      
       router.push(`/conversations/${newConversation.id}`);
+      setIsCreating(false);
       await sendMessage(input);
-
-
-
-
+      setInput('');
 
 
     } catch (error) {

@@ -79,13 +79,13 @@ export const useChatStore = create<ChatState>()(devtools((set, get) => ({
   sidebarOpen: false,
 
   setMessages: (messages) => set((state) => ({
-    messages: typeof messages === 'function' ? messages(state.messages) : messages
+    messages: typeof messages === 'function' ? messages(state.messages) : [...new Map(messages.map(m => [m.id, m])).values()]
   })),
 
   setConversations: (conversations) => set({ conversations }),
 
   addMessage: (message) => set((state) => ({
-    messages: [...state.messages, message]
+    messages: [...state.messages.filter(m => m.id !== message.id), message]
   })),
 
   updateMessage: (id, message) => set((state) => ({

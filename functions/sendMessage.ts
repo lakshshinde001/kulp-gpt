@@ -69,7 +69,7 @@ export const sendMessage = async (
 
   // temporary user message with unique ID
   const tempMessage: Message = {
-    id: -(Date.now() + Math.random()),
+    id: -Math.floor(Math.random() * 1000000000 + Date.now()),
     userId,
     conversationId: activeConversationId!,
     role: "user",
@@ -112,7 +112,7 @@ export const sendMessage = async (
 
 
     // Create a placeholder assistant message with unique ID
-    const aiMessageId = Date.now() + Math.random();
+    const aiMessageId = Math.floor(Math.random() * 1000000000 + Date.now());
     const assistantMessage: Message = {
       id: aiMessageId,
       userId: userId,
