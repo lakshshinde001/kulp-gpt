@@ -1,9 +1,12 @@
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
-import { smoothStream, stepCountIs, streamText } from 'ai';
+import { smoothStream, stepCountIs, streamText, type CoreMessage } from 'ai';
 import { getCurrentTime } from '@/tools/tool.service';
 import { mcpToolsFromSmithery } from '@/lib/mcp';
 import { z } from 'zod';
 import { systemPrompt } from '@/lib/prompts';
+import { db } from '@/src/db/client';
+import { eq, desc } from 'drizzle-orm';
+import { messages } from '@/src/db/schema';
 
 
 
@@ -13,10 +16,12 @@ const openrouter = createOpenRouter({
 
 
 export async function POST(req: Request) {
-  const { message, conversationId, userId } = await req.json();
+  const { message : userMessage, conversationId, userId } = await req.json();
 
   // Initialize MCP client
   const mcpClient = await mcpToolsFromSmithery();
+
+  
 
   // Local tools
   const localTools = {
@@ -48,10 +53,7 @@ export async function POST(req: Request) {
   try {
     const result = await streamText({
       model,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: message },
-      ],
+      messages: await buildUserMessage(userMessage, conversationId),
       tools: allTools,
       onError: async (error) => {
         console.log("error", error);
@@ -79,3 +81,59 @@ export async function POST(req: Request) {
   }
 }
 
+
+
+const buildUserMessage = async (userMessage: string, conversationId: string): Promise<CoreMessage[]> => {
+  try {
+    const messageHistory: CoreMessage[] = []
+    messageHistory.push({ role: 'system', content: systemPrompt })
+
+    // Fetch last 6 messages from conversation history (will use 5, excluding the latest)
+    try {
+      console.log('Fetching past messages for conversationId:', conversationId);
+      const pastMessages = await db
+        .select()
+        .from(messages)
+        .where(eq(messages.conversationId, conversationId))
+        .orderBy(desc(messages.createdAt))
+        .limit(6)
+
+      // Remove the latest message (most recent) from past messages
+      const filteredPastMessages = pastMessages.slice(1);
+
+      console.log('Found past messages (excluding latest):', filteredPastMessages.length);
+
+      // Format past conversations
+      if (filteredPastMessages.length > 0) {
+        const pastConversationsText = filteredPastMessages
+          .reverse() // Reverse to get chronological order (oldest first)
+          .map(msg => `${msg.role}: ${msg.content}`)
+          .join('\n\n')
+
+        messageHistory.push({
+          role: 'user',
+          content: `<past_conversations>\n${pastConversationsText}\n</past_conversations>`
+        })
+        console.log('Added past conversations to message history');
+      }
+    } catch (dbError) {
+      console.error('Error fetching past messages from database:', dbError)
+      // Continue without past messages if DB fails
+    }
+
+    // Add current message
+    messageHistory.push({
+      role: 'user',
+      content: `<current_msg>\n${userMessage}\n</current_msg>`
+    })
+
+    return messageHistory;
+  } catch (error) {
+    console.error('Error building user message:', error)
+    // Return minimal message history with just system prompt and current message
+    return [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: `<current_msg>\n${userMessage}\n</current_msg>` }
+    ];
+  }
+}

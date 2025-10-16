@@ -20,8 +20,8 @@ export default function Header() {
     }
 
   return (
-    <div className="flex-shrink-0 h-16 bg-transparent flex justify-between ml-13 md:ml-4 items-center px-4 md:px-6 z-50">
-      <p className='text-neutral-200 text-xl font-semibold '>KulpGPT</p>
+    <div className="flex-shrink-0 h-16 bg-transparent flex justify-between ml-13 md:ml-4 items-center px-4 md:px-6 z-50 fixed top-0 left-0 right-0">
+      <p className='text-neutral-200 text-xl font-semibold  cursor-pointer' onClick={() => router.push('/')}>KulpGPT</p>
     
       {
             !isMobile && (
@@ -30,10 +30,10 @@ export default function Header() {
         
         
                 <div className='flex items-center gap-2'>
-                  <Share size={20} className='text-neutral-400' />
-                  <p className='text-neutral-400'>Share</p>
+                  <Share size={20} className='text-neutral-400 cursor-pointer' />
+                  <p className='text-neutral-400 cursor-pointer'>Share</p>
                 </div>
-                <Ellipsis size={20} className='text-neutral-400' />
+                <Ellipsis size={20} className='text-neutral-400 cursor-pointer' />
               </div>
             )
         }

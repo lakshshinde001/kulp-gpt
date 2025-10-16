@@ -9,7 +9,7 @@ import { pgTable, serial, text, timestamp, varchar, integer } from "drizzle-orm/
 });
 
 export const conversations = pgTable("conversations", {
-  id: serial("id").primaryKey(),
+  id: varchar("id", { length: 36 }).primaryKey(),
   userId: integer("userId").notNull(),
   title: varchar("title", { length: 255 }).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -18,7 +18,7 @@ export const conversations = pgTable("conversations", {
 export const messages = pgTable("messages", {
   id: serial("id").primaryKey(),
   userId: integer("userId").notNull(),
-  conversationId: integer("conversation_id").notNull(),
+  conversationId: varchar("conversation_id", { length: 36 }).notNull(),
   role: varchar("role", { length: 20 }).notNull(), // 'user' or 'assistant'
   content: text("content").notNull(),
   reasoning: text("reasoning"),

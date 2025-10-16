@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
 
     const newMessage = await db.insert(messages).values({
       userId: Number(userId),
-      conversationId: Number(conversationId),
+      conversationId: conversationId, // Keep as string (UUID)
       role,
       content,
       reasoning: reasoning || null,
@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
     const conversationMessages = await db
       .select()
       .from(messages)
-      .where(eq(messages.conversationId, parseInt(conversationId)))
+      .where(eq(messages.conversationId, conversationId))
       .orderBy(messages.createdAt);
     
     return NextResponse.json(conversationMessages);

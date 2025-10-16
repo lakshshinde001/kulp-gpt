@@ -14,7 +14,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'userId is required' }, { status: 400 });
     }
 
+    // Generate a UUID for the conversation
+    const conversationId = crypto.randomUUID();
+
     const conversationData = {
+      id: conversationId,
       userId: Number(userId),
       title: title || 'New Conversation',
     };
@@ -106,7 +110,7 @@ export async function PATCH(request: NextRequest) {
     const updatedConversation = await db
       .update(conversations)
       .set({ title })
-      .where(eq(conversations.id, Number(id)))
+      .where(eq(conversations.id, id))
       .returning();
 
     if (updatedConversation.length === 0) {

@@ -22,7 +22,7 @@ export default function ConversationPage() {
   // Switch to the specific conversation once conversations are loaded
   useEffect(() => {
     if (slug && conversations.length > 0) {
-      const conversation = conversations.find(c => c.id === parseInt(slug));
+      const conversation = conversations.find(c => c.id === slug);
 
       if (conversation) {
         // Switch to the conversation (this will set messages from conversation data)

@@ -19,7 +19,7 @@ interface ToolCall {
 interface Message {
   id: number
   userId: number
-  conversationId: number
+  conversationId: string
   role: 'user' | 'assistant'
   content: string
   reasoning?: string
@@ -32,7 +32,7 @@ interface Message {
 export type { Message, ToolCall };
 
 interface Conversation {
-  id: number
+  id: string
   title: string
   createdAt: string
   messages?: Message[]
@@ -42,7 +42,7 @@ interface ChatState {
   messages: Message[]
   conversations: Conversation[]
   input: string
-  currentConversationId: number | null
+  currentConversationId: string | null
   isLoading: boolean
   isCreatingConversation: boolean
   sidebarOpen: boolean
@@ -54,7 +54,7 @@ interface ChatState {
   updateMessage: (id: number, message: Message) => void
   removeMessage: (id: number) => void
   setInput: (input: string) => void
-  setCurrentConversationId: (id: number | null) => void
+  setCurrentConversationId: (id: string | null) => void
   setIsLoading: (loading: boolean) => void
   setIsCreatingConversation: (loading: boolean) => void
   toggleSidebar: () => void
@@ -64,8 +64,8 @@ interface ChatState {
   sendMessage: (content: string) => Promise<void>
   loadConversations: () => Promise<void>
   createConversation: (title?: string) => Promise<Conversation>
-  updateConversationTitle: (conversationId: number, title: string) => Promise<void>
-  switchConversation: (conversationId: number) => Promise<void>
+  updateConversationTitle: (conversationId: string, title: string) => Promise<void>
+  switchConversation: (conversationId: string) => Promise<void>
 }
 
 
@@ -110,7 +110,7 @@ export const useChatStore = create<ChatState>()(devtools((set, get) => ({
         // Update conversation messages when adding new message
         const { conversations, currentConversationId, setConversations, updateConversationTitle } = get()
         if (currentConversationId) {
-          const updatedConversations = conversations.map(conv =>
+          const updatedConversations = conversations.map((conv: Conversation) =>
             conv.id === currentConversationId
               ? { ...conv, messages: [...(conv.messages || []), message] }
               : conv
@@ -201,7 +201,7 @@ export const useChatStore = create<ChatState>()(devtools((set, get) => ({
     }
   },
 
-  updateConversationTitle: async (conversationId, title) => {
+  updateConversationTitle: async (conversationId: string, title: string) => {
     const { conversations, setConversations } = get()
 
     try {
@@ -228,7 +228,7 @@ export const useChatStore = create<ChatState>()(devtools((set, get) => ({
     }
   },
 
-  switchConversation: async (conversationId) => {
+  switchConversation: async (conversationId: string) => {
     const { setCurrentConversationId, conversations } = get()
 
     setCurrentConversationId(conversationId)

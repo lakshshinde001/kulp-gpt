@@ -11,7 +11,7 @@ interface ToolCall {
 interface Message {
   id: number
   userId: number
-  conversationId: number
+  conversationId: string
   role: 'user' | 'assistant'
   content: string
   reasoning?: string
@@ -22,16 +22,16 @@ interface Message {
 }
 
 interface ChatActions {
-  currentConversationId: number | null
+  currentConversationId: string | null
   addMessage: (message: Message) => void
   updateMessage: (id: number, message: Message) => void
   removeMessage: (id: number) => void
   setInput: (input: string) => void
   setIsLoading: (loading: boolean) => void
   createConversation: (title?: string) => Promise<any>
-  updateConversationTitle: (conversationId: number, title: string) => Promise<void>
-  setCurrentConversationId: (id: number | null) => void
-  loadMessages: (conversationId?: number) => Promise<void>
+  updateConversationTitle: (conversationId: string, title: string) => Promise<void>
+  setCurrentConversationId: (id: string | null) => void
+  loadMessages: (conversationId?: string) => Promise<void>
   getCurrentUserId: () => number
 }
 

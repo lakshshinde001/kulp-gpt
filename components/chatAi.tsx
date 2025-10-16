@@ -56,12 +56,16 @@ const ChatAi = () => {
     try {
       // Clear input immediately to prevent multiple submissions
       setInput("");
-      executingRef.current = true;
-      setExecuting(true);
+      setTimeout(() => {
+        setExecuting(true);
+        executingRef.current = true;
+      },500)
       await sendMessage(trimmedInput);
       inputRef.current?.focus();
-      executingRef.current = false;
-      setExecuting(false);
+      setTimeout(() => {
+        executingRef.current = false;
+        setExecuting(false);
+      })
     } catch (error) {
       console.error('Error sending message:', error);
       // Restore input on error
@@ -143,12 +147,14 @@ const ChatAi = () => {
                               ))}
                             </div>
                           )}
-                        <div className="prose prose-invert max-w-none prose-sm bg-neutral-900 rounded-lg p-4">
-                          <ReactMarkdown>
-                            {m.content}
-                          </ReactMarkdown>
-                        </div>
-                       
+
+                          {m.content && m.content.length > 0 && (
+                            <div className="prose prose-invert max-w-none prose-sm bg-neutral-900 rounded-lg p-4">
+                              <ReactMarkdown>
+                                {m.content}
+                              </ReactMarkdown>
+                            </div>
+                          )}
                       </div>
                     )}
                   </div>

@@ -39,7 +39,7 @@ const Sidebar = () => {
         }
     }
 
-    const handleConversationClick = (conversationId: number) => {
+    const handleConversationClick = (conversationId: string) => {
 
         if(isMobile) {
             setSidebarOpen(false)
