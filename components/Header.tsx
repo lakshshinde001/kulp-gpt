@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 
 export default function Header() {
     const isMobile = useIsMobile();
-    const { createConversation } = useChatStore();
+    const { createConversation, isCreatingConversation } = useChatStore();
     const router = useRouter();
 
 
@@ -41,7 +41,11 @@ export default function Header() {
         {
             isMobile && (
                 <div className='flex items-center gap-2'>
-                  <Plus size={20} className='text-neutral-400' onClick={handleNewConversation} />
+                  <Plus
+                    size={20}
+                    className={`text-neutral-400 cursor-pointer ${isCreatingConversation ? 'animate-spin opacity-50' : 'hover:text-neutral-200'}`}
+                    onClick={handleNewConversation}
+                  />
                 </div>
             )
         }

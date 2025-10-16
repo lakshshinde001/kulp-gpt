@@ -17,6 +17,7 @@ const ChatAi = () => {
     sendMessage,
     setInput,
     isLoading,
+    isCreatingConversation,
   } = useChatStore();
 
   const [collapsedReasoning, setCollapsedReasoning] = useState<Map<number, boolean>>(new Map());
@@ -47,17 +48,24 @@ const ChatAi = () => {
   };
 
   const handleSubmit = async () => {
-    if (!input.trim() || isLoading || executingRef.current) return;
+    const trimmedInput = input.trim();
+    if (!trimmedInput || isLoading || executingRef.current) {
+      return;
+    }
+
     try {
+      // Clear input immediately to prevent multiple submissions
+      setInput("");
       executingRef.current = true;
       setExecuting(true);
-      await sendMessage(input);
+      await sendMessage(trimmedInput);
       inputRef.current?.focus();
-      console.log("message sent");
       executingRef.current = false;
       setExecuting(false);
     } catch (error) {
       console.error('Error sending message:', error);
+      // Restore input on error
+      setInput(trimmedInput);
       executingRef.current = false;
       setExecuting(false);
     }
@@ -76,18 +84,11 @@ const ChatAi = () => {
         
         <div className="flex-1 overflow-y-auto p-4 pb-20 mt-14">
           <div className="max-w-4xl mx-auto space-y-4">
-            {isLoading && messages.length === 0 ? (
-
-              <div className="space-y-6">
-                {[...Array(4)].map((_, i) => (
-                  <div key={i} className={`flex ${i % 2 === 0 ? "justify-end" : "justify-start"}`}>
-                    <div className={`animate-pulse ${
-                      i % 2 === 0
-                        ? "ml-12 bg-neutral-800 rounded-full"
-                        : "mr-12 bg-neutral-800 rounded-lg"
-                    } ${i % 2 === 0 ? "w-48 h-10" : "w-64 h-16"}`}></div>
-                  </div>
-                ))}
+            {isCreatingConversation ? (
+              <div className="flex justify-center items-center h-full min-h-[60vh] flex-col gap-6">
+                <p className="text-4xl md:text-6xl font-semibold tracking-wide text-center text-gray-500">
+                  Creating New Chat...
+                </p>
               </div>
             )  : messages.length > 0 ? (
               messages.map((m) => (

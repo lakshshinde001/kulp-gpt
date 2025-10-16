@@ -29,6 +29,7 @@ interface ChatActions {
   setInput: (input: string) => void
   setIsLoading: (loading: boolean) => void
   createConversation: (title?: string) => Promise<any>
+  updateConversationTitle: (conversationId: number, title: string) => Promise<void>
   setCurrentConversationId: (id: number | null) => void
   loadMessages: (conversationId?: number) => Promise<void>
   getCurrentUserId: () => number
@@ -66,9 +67,9 @@ export const sendMessage = async (
 
   const userId = getCurrentUserId();
 
-  // temporary user message
+  // temporary user message with unique ID
   const tempMessage: Message = {
-    id: Date.now() * -1,
+    id: -(Date.now() + Math.random()),
     userId,
     conversationId: activeConversationId!,
     role: "user",
@@ -77,7 +78,6 @@ export const sendMessage = async (
   };
 
   addMessage(tempMessage);
-  setInput("");
   setIsLoading(true);
 
   try {
@@ -111,8 +111,8 @@ export const sendMessage = async (
     if (!aiResponse.ok || !aiResponse.body) throw new Error("AI response failed");
 
 
-    // Create a placeholder assistant message
-    const aiMessageId = Date.now();
+    // Create a placeholder assistant message with unique ID
+    const aiMessageId = Date.now() + Math.random();
     const assistantMessage: Message = {
       id: aiMessageId,
       userId: userId,
@@ -208,7 +208,7 @@ export const sendMessage = async (
     }
 
     // Final update to ensure all data is rendered
-    if (updateTimeout) {
+  if (updateTimeout) {
       clearTimeout(updateTimeout);
     }
     updateMessage(aiMessageId, { ...assistantMessage });

@@ -1,5 +1,5 @@
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
-import { stepCountIs, streamText } from 'ai';
+import { smoothStream, stepCountIs, streamText } from 'ai';
 import { getCurrentTime } from '@/tools/tool.service';
 import { mcpToolsFromSmithery } from '@/lib/mcp';
 import { z } from 'zod';
@@ -65,6 +65,10 @@ export async function POST(req: Request) {
         console.log("Streaming finished");
         await mcpClient.close();
       },
+      experimental_transform : smoothStream({
+        chunking : "word",
+        delayInMs : 50,
+      }),
     });
 
     return result.toUIMessageStreamResponse();

@@ -8,34 +8,30 @@ import { useChatStore } from '../../../stores/chatStore';
 export default function ConversationPage() {
   const params = useParams();
   const router = useRouter();
-  const { loadMessages, conversations, currentConversationId, setCurrentConversationId, loadConversations } = useChatStore();
+  const { conversations, currentConversationId, setCurrentConversationId, loadConversations, switchConversation } = useChatStore();
 
   const slug = params.slug as string;
 
+  // Load conversations if not already loaded
   useEffect(() => {
-    // Load conversations when component mounts
-    loadConversations();
-  }, [loadConversations]);
+    if (conversations.length === 0) {
+      loadConversations();
+    }
+  }, [conversations.length, loadConversations]);
 
+  // Switch to the specific conversation once conversations are loaded
   useEffect(() => {
-    console.log("slug", slug);
     if (slug && conversations.length > 0) {
-      // Find the conversation by ID only after conversations are loaded
-      console.log("conversations", conversations);
       const conversation = conversations.find(c => c.id === parseInt(slug));
-      console.log("founded conversation", conversation);
 
       if (conversation) {
-
-        setCurrentConversationId(conversation.id);
-
-        loadMessages(conversation.id);
+        // Switch to the conversation (this will set messages from conversation data)
+        switchConversation(conversation.id);
       } else {
-        console.log("no conversation found, redirecting to home");
         router.push('/');
       }
     }
-  }, [slug, conversations, setCurrentConversationId, loadMessages, router]);
+  }, [slug, conversations.length, switchConversation, router]);
 
 
   return <ChatAi />;

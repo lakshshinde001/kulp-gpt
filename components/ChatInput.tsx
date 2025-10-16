@@ -93,7 +93,7 @@ const ChatInput = forwardRef<HTMLInputElement, ChatInputProps>(({
         className={className}
       />
 
-      {/* Hidden file input */}
+     
       <input
         ref={fileInputRef}
         type="file"
@@ -103,7 +103,7 @@ const ChatInput = forwardRef<HTMLInputElement, ChatInputProps>(({
         className="hidden"
       />
 
-      {/* Voice button - only show when no text and voice is enabled */}
+     
       {showVoiceButton && value.length < 1 && (
         <button
           type="button"
@@ -115,7 +115,7 @@ const ChatInput = forwardRef<HTMLInputElement, ChatInputProps>(({
         </button>
       )}
 
-      {/* Image attach button */}
+     
       {onImageAttach && (
         <button
           type="button"
@@ -128,7 +128,7 @@ const ChatInput = forwardRef<HTMLInputElement, ChatInputProps>(({
         </button>
       )}
 
-      {/* Send button */}
+     
       <button
         type="button"
         onClick={onSubmit}

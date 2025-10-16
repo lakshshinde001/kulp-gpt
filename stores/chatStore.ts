@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { useUserStore } from './userStore'
 import { sendMessage } from '../functions/sendMessage'
-
+import { devtools } from 'zustand/middleware'
 // Helper function to get current user ID
 const getCurrentUserId = () => {
   const user = useUserStore.getState().user
@@ -35,6 +35,7 @@ interface Conversation {
   id: number
   title: string
   createdAt: string
+  messages?: Message[]
 }
 
 interface ChatState {
@@ -43,6 +44,7 @@ interface ChatState {
   input: string
   currentConversationId: number | null
   isLoading: boolean
+  isCreatingConversation: boolean
   sidebarOpen: boolean
 
 
@@ -54,24 +56,26 @@ interface ChatState {
   setInput: (input: string) => void
   setCurrentConversationId: (id: number | null) => void
   setIsLoading: (loading: boolean) => void
+  setIsCreatingConversation: (loading: boolean) => void
   toggleSidebar: () => void
   setSidebarOpen: (open: boolean) => void
 
 
   sendMessage: (content: string) => Promise<void>
-  loadMessages: (conversationId?: number) => Promise<void>
   loadConversations: () => Promise<void>
   createConversation: (title?: string) => Promise<Conversation>
+  updateConversationTitle: (conversationId: number, title: string) => Promise<void>
   switchConversation: (conversationId: number) => Promise<void>
 }
 
 
-export const useChatStore = create<ChatState>((set, get) => ({
+export const useChatStore = create<ChatState>()(devtools((set, get) => ({
   messages: [],
   conversations: [],
   input: '',
-  currentConversationId: null, 
+  currentConversationId: null,
   isLoading: false,
+  isCreatingConversation: false,
   sidebarOpen: false,
 
   setMessages: (messages) => set((state) => ({
@@ -95,20 +99,51 @@ export const useChatStore = create<ChatState>((set, get) => ({
   setInput: (input) => set({ input }),
   setCurrentConversationId: (id) => set({ currentConversationId: id }),
   setIsLoading: (isLoading) => set({ isLoading }),
+  setIsCreatingConversation: (isCreating) => set({ isCreatingConversation: isCreating }),
   toggleSidebar: () => set((state) => ({ sidebarOpen: !state.sidebarOpen })),
   setSidebarOpen: (open) => set({ sidebarOpen: open }),
 
   sendMessage: async (content: string) => {
     const actions = {
       currentConversationId: get().currentConversationId,
-      addMessage: get().addMessage,
+      addMessage: async (message: Message) => {
+        // Update conversation messages when adding new message
+        const { conversations, currentConversationId, setConversations, updateConversationTitle } = get()
+        if (currentConversationId) {
+          const updatedConversations = conversations.map(conv =>
+            conv.id === currentConversationId
+              ? { ...conv, messages: [...(conv.messages || []), message] }
+              : conv
+          )
+          setConversations(updatedConversations)
+
+          // Update conversation title if this is the first user message and title is still default
+          const currentConversation = conversations.find(c => c.id === currentConversationId)
+          if (message.role === 'user' &&
+              currentConversation &&
+              (currentConversation.title === 'New Chat' || currentConversation.title === 'New Conversation')) {
+            // Truncate the message content for the title (max 50 characters)
+            const title = message.content.length > 50
+              ? message.content.substring(0, 50) + '...'
+              : message.content
+            try {
+              await updateConversationTitle(currentConversationId, title)
+            } catch (error) {
+              console.error('Failed to update conversation title:', error)
+              // Don't throw - message was sent successfully even if title update failed
+            }
+          }
+        }
+        get().addMessage(message)
+      },
       updateMessage: get().updateMessage,
       removeMessage: get().removeMessage,
       setInput: get().setInput,
       setIsLoading: get().setIsLoading,
       createConversation: get().createConversation,
       setCurrentConversationId: get().setCurrentConversationId,
-      loadMessages: get().loadMessages,
+      updateConversationTitle: get().updateConversationTitle,
+      loadMessages: async () => {}, // Dummy function for compatibility
       getCurrentUserId,
     };
 
@@ -116,47 +151,6 @@ export const useChatStore = create<ChatState>((set, get) => ({
   },
   
 
-  loadMessages: async (conversationId) => {
-    const { setMessages, setIsLoading } = get()
-    const targetConversationId = conversationId || get().currentConversationId
-
-    setIsLoading(true)
-    try {
-      const response = await fetch(`/api/messages?conversationId=${targetConversationId}`)
-
-      if (response.ok) {
-        const rawMessages = await response.json()
-        // Convert duration from milliseconds to seconds and format as string
-        const processedMessages = rawMessages.map((msg: any) => {
-          console.log('Processing message:', msg.id, 'tool_calls field:', msg.tool_calls, 'toolCalls field:', msg.toolCalls);
-
-          let toolCalls;
-          try {
-            // Check both possible field names (tool_calls from DB, toolCalls from camelCase)
-            const toolCallsStr = msg.toolCalls || msg.tool_calls;
-            toolCalls = toolCallsStr ? JSON.parse(toolCallsStr) : undefined;
-            console.log('Parsed toolCalls for message', msg.id, ':', toolCalls);
-          } catch (error) {
-            console.error('Error parsing toolCalls for message', msg.id, ':', error);
-            toolCalls = undefined;
-          }
-
-          return {
-            ...msg,
-            duration: msg.duration ? `${Math.round((msg.duration / 1000) * 10) / 10}s` : undefined,
-            toolCalls
-          };
-        })
-        setMessages(processedMessages)
-      } else {
-        console.error('Failed to load messages')
-      }
-    } catch (error) {
-      console.error('Error loading messages:', error)
-    } finally {
-      setIsLoading(false)
-    }
-  },
 
   loadConversations: async () => {
     const { setConversations, setIsLoading } = get()
@@ -181,9 +175,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
   },
 
   createConversation: async (title) => {
-    const { setConversations, conversations } = get()
+    const { setConversations, conversations, setIsCreatingConversation } = get()
     const userId = getCurrentUserId()
 
+    setIsCreatingConversation(true)
     try {
       const response = await fetch('/api/conversations', {
         method: 'POST',
@@ -201,13 +196,50 @@ export const useChatStore = create<ChatState>((set, get) => ({
     } catch (error) {
       console.error('Error creating conversation:', error)
       throw error
+    } finally {
+      setIsCreatingConversation(false)
+    }
+  },
+
+  updateConversationTitle: async (conversationId, title) => {
+    const { conversations, setConversations } = get()
+
+    try {
+      const response = await fetch('/api/conversations', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: conversationId, title }),
+      })
+
+      if (response.ok) {
+        // Update the conversation title in the local state
+        const updatedConversations = conversations.map(conv =>
+          conv.id === conversationId
+            ? { ...conv, title }
+            : conv
+        )
+        setConversations(updatedConversations)
+      } else {
+        throw new Error('Failed to update conversation title')
+      }
+    } catch (error) {
+      console.error('Error updating conversation title:', error)
+      throw error
     }
   },
 
   switchConversation: async (conversationId) => {
-    const { setCurrentConversationId, loadMessages } = get()
+    const { setCurrentConversationId, conversations } = get()
 
     setCurrentConversationId(conversationId)
-    await loadMessages(conversationId)
+
+    // Find the conversation and set its messages
+    const conversation = conversations.find(c => c.id === conversationId)
+    if (conversation?.messages) {
+      get().setMessages(conversation.messages)
+    } else {
+      // Fallback: if no messages in conversation, set empty array
+      get().setMessages([])
+    }
   },
-}))
+})))

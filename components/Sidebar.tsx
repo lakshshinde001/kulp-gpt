@@ -12,7 +12,7 @@ import { Separator } from './ui/separator'
 
 const Sidebar = () => {
     const router = useRouter()
-    const { conversations, currentConversationId, loadConversations, createConversation, switchConversation, sidebarOpen, toggleSidebar, isLoading, setSidebarOpen } = useChatStore()
+    const { conversations, currentConversationId, loadConversations, createConversation, switchConversation, sidebarOpen, toggleSidebar, isLoading, isCreatingConversation, setSidebarOpen } = useChatStore()
     const { user, logout } = useUserStore()
 
     // Check if we're on mobile
@@ -173,11 +173,12 @@ const Sidebar = () => {
             <div className={`${sidebarOpen ? 'px-4' : 'px-2'} py-2`}>
                 <button
                     onClick={handleNewConversation}
-                    className={`w-full flex items-center cursor-pointer ${sidebarOpen ? 'gap-2 px-3' : 'justify-center px-2'} py-2 text-sm text-neutral-200 hover:bg-neutral-800 rounded-lg transition-colors`}
+                    disabled={isCreatingConversation}
+                    className={`w-full flex items-center cursor-pointer ${sidebarOpen ? 'gap-2 px-3' : 'justify-center px-2'} py-2 text-sm text-neutral-200 hover:bg-neutral-800 rounded-lg transition-colors ${isCreatingConversation ? 'opacity-50 cursor-not-allowed' : ''}`}
                     title={sidebarOpen ? '' : 'New Chat'}
                 >
-                    <MessageSquarePlus size={16} />
-                    {sidebarOpen && <span>New Chat</span>}
+                    <MessageSquarePlus size={16} className={isCreatingConversation ? 'animate-spin' : ''} />
+                    {sidebarOpen && <span>{isCreatingConversation ? 'Creating...' : 'New Chat'}</span>}
                 </button>
             </div>
 
