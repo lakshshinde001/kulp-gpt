@@ -6,6 +6,7 @@ async function testConversationCreation() {
     console.log('Testing conversation creation...')
 
     const conversationData = {
+      id: crypto.randomUUID(),
       userId: 1, // Demo user ID
       title: 'Test Conversation',
     }
