@@ -8,6 +8,8 @@ import { Menu, Voicemail, ChevronDown, ChevronRight } from "lucide-react";
 import { useChatStore } from "../stores/chatStore";
 import ChatInput from "./ChatInput";
 
+
+
 const ChatAi = () => {
   const {
     messages,
@@ -15,13 +17,11 @@ const ChatAi = () => {
     sendMessage,
     setInput,
     isLoading,
-    loadMessages,
-    loadConversations,
-    toggleSidebar,
   } = useChatStore();
 
   const [collapsedReasoning, setCollapsedReasoning] = useState<Map<number, boolean>>(new Map());
-
+  const [executing, setExecuting] = useState(false);
+  const executingRef = useRef(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -47,9 +47,20 @@ const ChatAi = () => {
   };
 
   const handleSubmit = async () => {
-    if (!input.trim() || isLoading) return;
-    await sendMessage(input);
-    inputRef.current?.focus();
+    if (!input.trim() || isLoading || executingRef.current) return;
+    try {
+      executingRef.current = true;
+      setExecuting(true);
+      await sendMessage(input);
+      inputRef.current?.focus();
+      console.log("message sent");
+      executingRef.current = false;
+      setExecuting(false);
+    } catch (error) {
+      console.error('Error sending message:', error);
+      executingRef.current = false;
+      setExecuting(false);
+    }
   };
 
   const handleImageAttach = (files: File[]) => {
@@ -59,13 +70,14 @@ const ChatAi = () => {
   };
 
   return (
-    <div className="flex h-[100dvh] bg-gradient-to-t from-neutral-950 via-neutral-900 to-red-950">
+    <div className="flex h-[100dvh]">
+     
       <div className="flex-1 flex flex-col">
         
-        <div className="flex-1 overflow-y-auto p-4 pb-20">
+        <div className="flex-1 overflow-y-auto p-4 pb-20 mt-14">
           <div className="max-w-4xl mx-auto space-y-4">
             {isLoading && messages.length === 0 ? (
-            
+
               <div className="space-y-6">
                 {[...Array(4)].map((_, i) => (
                   <div key={i} className={`flex ${i % 2 === 0 ? "justify-end" : "justify-start"}`}>
@@ -77,7 +89,7 @@ const ChatAi = () => {
                   </div>
                 ))}
               </div>
-            ) : messages.length > 0 ? (
+            )  : messages.length > 0 ? (
               messages.map((m) => (
                 <div
                   key={m.id}
@@ -135,40 +147,35 @@ const ChatAi = () => {
                             {m.content}
                           </ReactMarkdown>
                         </div>
+                       
                       </div>
                     )}
                   </div>
                 </div>
               ))
-            ) : (
-              <div className="flex justify-center items-center h-full min-h-[60vh] flex-col gap-6 mt-20">
-                <p className="text-4xl md:text-6xl font-semibold tracking-wide text-center text-gray-500">
-                  What Brings you here?
-                </p>
-                <div className="flex-shrink-0 p-4 ">
-                  <div className="">
-                    <div className="relative w-[300px] sm:w-[400px] md:w-[500px] lg:w-[600px] mx-auto">
-                      <ChatInput
-                        value={input}
-                        onChange={onChangeHandler}
-                        onSubmit={handleSubmit}
-                        onImageAttach={handleImageAttach}
-                        disabled={isLoading}
-                        showVoiceButton={true}
-                        className="w-full pr-24 pl-4 h-12 text-base rounded-full"
-                      />
+            ) : null  }
+              {executingRef.current ? (
+                <div className="flex justify-start text-neutral-400">
+                  <div className="px-4 py-2 max-w-[75%] break-words text-neutral-300 mr-12">
+                    <div className="space-y-3">
+                      <div className="bg-neutral-900 rounded-lg">
+                        <div className="flex items-center justify-between p-3">
+                          <div className="text-xs  font-medium flex items-center gap-2">
+                           
+                            Thinking...
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            )}
+              ) : null}
           </div>
           <div ref={messagesEndRef} />
         </div>
 
 
 
-        {messages.length > 0 && (
           <div className="flex-shrink-0 p-4">
             <div className="max-w-4xl mx-auto">
               <ChatInput
@@ -182,7 +189,7 @@ const ChatAi = () => {
               />
             </div>
           </div>
-        )}
+      
       </div>
     </div>
   );

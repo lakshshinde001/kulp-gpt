@@ -8,22 +8,30 @@ import { useChatStore } from '../../../stores/chatStore';
 export default function ConversationPage() {
   const params = useParams();
   const router = useRouter();
-  const { loadMessages, conversations, currentConversationId, setCurrentConversationId } = useChatStore();
+  const { loadMessages, conversations, currentConversationId, setCurrentConversationId, loadConversations } = useChatStore();
 
   const slug = params.slug as string;
 
   useEffect(() => {
-    if (slug) {
-      // Find the conversation by ID
+    // Load conversations when component mounts
+    loadConversations();
+  }, [loadConversations]);
+
+  useEffect(() => {
+    console.log("slug", slug);
+    if (slug && conversations.length > 0) {
+      // Find the conversation by ID only after conversations are loaded
+      console.log("conversations", conversations);
       const conversation = conversations.find(c => c.id === parseInt(slug));
+      console.log("founded conversation", conversation);
 
       if (conversation) {
-       
+
         setCurrentConversationId(conversation.id);
-      
+
         loadMessages(conversation.id);
       } else {
-   
+        console.log("no conversation found, redirecting to home");
         router.push('/');
       }
     }

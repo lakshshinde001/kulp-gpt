@@ -1,19 +1,24 @@
 "use client"
 
-import { SidebarClose, MessageSquarePlus, Menu, User } from 'lucide-react'
-import React, { useEffect } from 'react'
+import { SidebarClose, MessageSquarePlus, Menu, User, Settings, HelpCircle, LogOut, Mail } from 'lucide-react'
+import React, { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useChatStore } from '../stores/chatStore'
 import { useUserStore } from '../stores/userStore'
 import { motion, stagger } from 'motion/react'
+import { Popover, PopoverContent, PopoverTrigger } from './ui/popover'
+import { Button } from './ui/button'
+import { Separator } from './ui/separator'
 
 const Sidebar = () => {
     const router = useRouter()
     const { conversations, currentConversationId, loadConversations, createConversation, switchConversation, sidebarOpen, toggleSidebar, isLoading, setSidebarOpen } = useChatStore()
-    const { user } = useUserStore()
+    const { user, logout } = useUserStore()
 
     // Check if we're on mobile
     const [isMobile, setIsMobile] = React.useState(false)
+    const [isLoggingOut, setIsLoggingOut] = useState(false)
+    const [popoverOpen, setPopoverOpen] = useState(false)
 
     useEffect(() => {
         const checkMobile = () => {
@@ -46,6 +51,19 @@ const Sidebar = () => {
     useEffect(() => {
         loadConversations()
     }, [loadConversations])
+
+    const handleLogout = async () => {
+        setIsLoggingOut(true)
+        try {
+            await logout()
+            setPopoverOpen(false)
+            router.push('/login')
+        } catch (error) {
+            console.error('Logout error:', error)
+        } finally {
+            setIsLoggingOut(false)
+        }
+    }
 
     const variants = {
       open: isMobile ? {
@@ -92,10 +110,10 @@ const Sidebar = () => {
   return (
     <>
 
-      {isMobile && (
+      {isMobile && !sidebarOpen && (
         <button
           onClick={toggleSidebar}
-          className="fixed top-4 left-4 z-50 p-2  rounded-lg transition-colors md:hidden"
+          className="fixed top-4 left-4 z-60 cursor-pointer p-2  rounded-lg transition-colors md:hidden"
         >
           <Menu size={20} className="text-neutral-300" />
         </button>
@@ -112,8 +130,8 @@ const Sidebar = () => {
       <motion.div
         className={`${
           isMobile
-            ? 'fixed top-0 left-0 z-50 h-[100dvh] flex flex-col bg-gradient-to-t from-neutral-950 via-neutral-900 to-red-950 border-r border-neutral-700'
-            : 'flex-shrink-0 flex flex-col justify-between h-[100dvh] bg-gradient-to-t from-neutral-950 via-neutral-900 to-red-950 border-r border-neutral-700 overflow-hidden'
+            ? 'fixed top-0 left-0 z-[999] h-[100dvh] flex flex-col border-r border-neutral-700 bg-neutral-950'
+            : 'flex-shrink-0 flex flex-col justify-between h-[100dvh] border-r border-neutral-700 overflow-hidden'
         }`}
         variants={variants}
         initial="closed"
@@ -132,7 +150,13 @@ const Sidebar = () => {
     
         <div className={`flex-shrink-0 flex items-center ${sidebarOpen ? 'justify-between' : 'justify-center'} p-4`}>
             {sidebarOpen && (
-              <h1 className='text-neutral-200 text-xl font-semibold'>
+              <h1
+                className='text-neutral-200 text-xl font-semibold cursor-pointer'
+                onClick={() => {
+                  router.push('/');
+                  if (isMobile) toggleSidebar();
+                }}
+              >
                   KulpGPT
               </h1>
             )}
@@ -149,7 +173,7 @@ const Sidebar = () => {
             <div className={`${sidebarOpen ? 'px-4' : 'px-2'} py-2`}>
                 <button
                     onClick={handleNewConversation}
-                    className={`w-full flex items-center ${sidebarOpen ? 'gap-2 px-3' : 'justify-center px-2'} py-2 text-sm text-neutral-200 hover:bg-neutral-800 rounded-lg transition-colors`}
+                    className={`w-full flex items-center cursor-pointer ${sidebarOpen ? 'gap-2 px-3' : 'justify-center px-2'} py-2 text-sm text-neutral-200 hover:bg-neutral-800 rounded-lg transition-colors`}
                     title={sidebarOpen ? '' : 'New Chat'}
                 >
                     <MessageSquarePlus size={16} />
@@ -166,7 +190,7 @@ const Sidebar = () => {
             )}
 
             <div className={`${sidebarOpen ? 'px-4' : 'px-2'} pb-4`}>
-                { isLoading && conversations.length === 0 ? (
+                { isLoading && sidebarOpen && conversations.length === 0 ? (
                     <div className="space-y-2">
                         {[...Array(3)].map((_, i) => (
                             <div key={i} className="animate-pulse">
@@ -188,7 +212,7 @@ const Sidebar = () => {
                             >
                                 <button
                                     onClick={() => handleConversationClick(conversation.id)}
-                                    className={`w-full flex items-center ${sidebarOpen ? 'text-left px-3 gap-2' : 'justify-center px-2'} py-2 text-sm rounded-lg transition-colors ${
+                                    className={`w-full flex items-center cursor-pointer ${sidebarOpen ? 'text-left px-3 gap-2' : 'justify-center px-2'} py-2 text-sm rounded-lg transition-colors ${
                                         conversation.id === currentConversationId
                                             ? 'bg-neutral-800 text-white'
                                             : 'text-neutral-300 hover:bg-neutral-800 hover:text-white'
@@ -216,31 +240,105 @@ const Sidebar = () => {
 
     
           <div className='flex-shrink-0 flex p-4 gap-2 items-center justify-start border-t border-neutral-700'>
-              <button
-                  onClick={() => router.push('/profile')}
-                  className='flex items-center gap-2 flex-1 hover:bg-neutral-800 rounded-lg p-2 -m-2 transition-colors'
-                  title={sidebarOpen ? '' : 'Profile'}
-              >
-                  <div className='h-8 w-8 bg-primary/20 rounded-full flex items-center justify-center flex-shrink-0'>
-                      {user ? (
-                          <span className='text-sm font-semibold text-primary'>
-                              {user.name.charAt(0).toUpperCase()}
-                          </span>
-                      ) : (
-                          <User size={16} className='text-primary' />
-                      )}
-                  </div>
-                  {sidebarOpen && (
-                      <div className='flex flex-col gap-1 text-sm min-w-0 flex-1 text-left'>
-                          <p className='text-neutral-200 truncate'>
-                              {user ? user.name : 'Guest'}
-                          </p>
-                          <p className='text-xs text-neutral-400 truncate'>
-                              {user ? 'Pro User' : 'Sign In'}
-                          </p>
+              <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
+                  <PopoverTrigger asChild>
+                      <button
+                          className='flex items-center cursor-pointer gap-2 flex-1 hover:bg-neutral-800 rounded-lg p-2 -m-2 transition-colors'
+                          title={sidebarOpen ? '' : 'Profile'}
+                      >
+                          <div className='h-8 w-8 bg-primary/20 rounded-full flex items-center justify-center flex-shrink-0'>
+                              {user ? (
+                                  <span className='text-sm font-semibold text-primary'>
+                                      {user.name.charAt(0).toUpperCase()}
+                                  </span>
+                              ) : (
+                                  <User size={16} className='text-primary' />
+                              )}
+                          </div>
+                          {sidebarOpen && (
+                              <div className='flex flex-col gap-1 text-sm min-w-0 flex-1 text-left'>
+                                  <p className='text-neutral-200 truncate'>
+                                      {user ? user.name : 'Guest'}
+                                  </p>
+                                  <p className='text-xs text-neutral-400 truncate'>
+                                      {user ? 'Pro User' : 'Sign In'}
+                                  </p>
+                              </div>
+                          )}
+                      </button>
+                  </PopoverTrigger>
+                  <PopoverContent
+                      className="w-64 p-0 bg-neutral-900 border-neutral-700 z-[1000]"
+                      align="start"
+                      side="top"
+                  >
+                      <div className="p-4">
+                          <div className="flex items-center gap-3 mb-4">
+                              <div className='h-10 w-10 bg-primary/20 rounded-full flex items-center justify-center flex-shrink-0'>
+                                  {user ? (
+                                      <span className='text-sm font-semibold text-primary'>
+                                          {user.name.charAt(0).toUpperCase()}
+                                      </span>
+                                  ) : (
+                                      <User size={16} className='text-primary' />
+                                  )}
+                              </div>
+                              <div className='flex flex-col gap-1 text-sm'>
+                                  <p className='text-neutral-200 font-medium'>
+                                      {user ? user.name : 'Guest'}
+                                  </p>
+                                  <p className='text-xs text-neutral-400'>
+                                      {user ? 'Pro User' : 'Sign In'}
+                                  </p>
+                              </div>
+                          </div>
+
+                          <Separator className="mb-3 bg-neutral-700" />
+
+                          <div className="space-y-1">
+                              {user && (
+                                  <>
+                                      <Button
+                                          variant="ghost"
+                                          className="w-full justify-start gap-3 text-neutral-300 hover:text-white hover:bg-neutral-800"
+                                          size="sm"
+                                      >
+                                          <Mail size={16} />
+                                          {user.email}
+                                      </Button>
+                                      <Button
+                                          variant="ghost"
+                                          className="w-full justify-start gap-3 text-neutral-300 hover:text-white hover:bg-neutral-800"
+                                          size="sm"
+                                      >
+                                          <Settings size={16} />
+                                          Settings
+                                      </Button>
+                                      <Button
+                                          variant="ghost"
+                                          className="w-full justify-start gap-3 text-neutral-300 hover:text-white hover:bg-neutral-800"
+                                          size="sm"
+                                      >
+                                          <HelpCircle size={16} />
+                                          Help
+                                      </Button>
+                                      <Separator className="my-2 bg-neutral-700" />
+                                      <Button
+                                          variant="ghost"
+                                          className="w-full justify-start gap-3 text-red-400 hover:text-red-300 hover:bg-red-900/20"
+                                          size="sm"
+                                          onClick={handleLogout}
+                                          disabled={isLoggingOut}
+                                      >
+                                          <LogOut size={16} />
+                                          {isLoggingOut ? 'Logging out...' : 'Logout'}
+                                      </Button>
+                                  </>
+                              )}
+                          </div>
                       </div>
-                  )}
-              </button>
+                  </PopoverContent>
+              </Popover>
           </div>
      
       </motion.div>
