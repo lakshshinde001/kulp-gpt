@@ -10,7 +10,7 @@ export default function ConversationsLayout({
   children: React.ReactNode
 }) {
   return (
-    <div className='w-full overflow-hidden  flex-1 flex md:relative'>
+    <div className='w-full overflow-hidden  flex-1 flex md:relative h-[100dvh]'>
       <Sidebar/>
       <div className='flex-1 bg-neutral-950 relative'>
         <div className="absolute top-0 left-0 md:left-0 right-0 z-50">
