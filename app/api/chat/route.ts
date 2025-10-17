@@ -38,7 +38,7 @@ export async function POST(req: Request) {
     ...localTools,
   };
 
-  const model = openrouter.chat('google/gemini-2.5-flash-001:free', {
+  const model = openrouter.chat('google/gemini-2.5-flash-lite', {
     usage: {
       include: true,
     },
