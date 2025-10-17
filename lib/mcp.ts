@@ -93,12 +93,13 @@ export async function mcpToolsFromSmithery(urls?: string[]): Promise<McpClientHa
     ? urls
     : [
         // "https://server.smithery.ai/@upstash/context7-mcp/mcp",
-        "https://server.smithery.ai/exa/mcp",
+        // "https://server.smithery.ai/exa/mcp",
         // "https://server.smithery.ai/@nickclyde/duckduckgo-mcp-server/mcp",
         // "https://server.smithery.ai/@chirag127/clear-thought-mcp-server/mcp",
         //   "https://server.smithery.ai/@supabase-community/supabase-mcp/mcp"
-        "https://server.smithery.ai/notion/mcp",
-        "https://server.smithery.ai/@smithery-ai/github/mcp"
+        // "https://server.smithery.ai/notion/mcp",
+        // "https://server.smithery.ai/@smithery-ai/github/mcp",
+        // "https://server.smithery.ai/linear/mcp"
       ];
   // Append api_key and profile to each URL
   const defaultUrl = baseUrls.map(u => {

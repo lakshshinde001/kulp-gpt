@@ -22,6 +22,27 @@
       "when": 1760347136032,
       "tag": "0002_condemned_zombie",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1760679675060,
+      "tag": "0003_chunky_sphinx",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1760683167899,
+      "tag": "0004_fat_bruce_banner",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1760688788870,
+      "tag": "0005_colossal_carmella_unuscione",
+      "breakpoints": true
     }
   ]
 }

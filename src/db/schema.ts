@@ -6,6 +6,7 @@ import { pgTable, serial, text, timestamp, varchar, integer } from "drizzle-orm/
   email: varchar("email", { length: 255 }).unique().notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   password: varchar("password", { length: 255 }).notNull(),
+  image: text("image"),
 });
 
 export const conversations = pgTable("conversations", {
@@ -26,3 +27,18 @@ export const messages = pgTable("messages", {
   toolCalls: text("tool_calls"), // JSON string of tool calls array
   createdAt: timestamp("created_at").defaultNow().notNull(),
   });
+
+export const slack_users = pgTable("slack_users", {
+  id: serial("id").primaryKey(),
+  userid: integer("userid").notNull().references(() => users.id, { onDelete: "cascade" }),
+  slack_user_id: varchar("slack_user_id", { length: 255 }).notNull().unique(),
+  access_token: text("access_token").notNull(),
+  id_token: text("id_token"), // OpenID Connect ID token
+  team_id: varchar("team_id", { length: 255 }),
+  user_name: varchar("user_name", { length: 255 }),
+  real_name: varchar("real_name", { length: 255 }),
+  email: varchar("email", { length: 255 }),
+  avatar: text("avatar"),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+  updated_at: timestamp("updated_at").defaultNow().notNull(),
+});

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
 import { useUserStore } from "@/stores/userStore";
 
 export default function LoginPage() {
@@ -77,11 +78,15 @@ export default function LoginPage() {
       // Login successful
       console.log('Login successful:', data);
 
-      // Store user data in userStore
-      login(data.user);
-
-      // Set authentication cookie for middleware
-      document.cookie = `user-auth=${data.user.id}; path=/; max-age=86400; samesite=strict`;
+      // Store user data in userStore with access token (valid for 1 day)
+      login({
+        id: data.user.id,
+        name: data.user.name,
+        email: data.user.email,
+        createdAt: data.user.createdAt,
+        avatar: data.user.image, // map image to avatar
+        // Add any other fields from the user data
+      });
 
       // Redirect to dashboard after successful login
       window.location.href = '/';
@@ -145,6 +150,29 @@ export default function LoginPage() {
             {isLoading ? "Signing in..." : "Sign In"}
           </Button>
         </form>
+
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center">
+            <span className="w-full border-t" />
+          </div>
+          <div className="relative flex justify-center text-xs uppercase">
+            <span className="bg-background px-2 text-muted-foreground">
+              Or
+            </span>
+          </div>
+        </div>
+
+        <Button
+          type="button"
+          variant="outline"
+          className="w-full"
+          onClick={() => window.location.href = '/api/slack/oauth'}
+        >
+          <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M5.042 15.165a2.528 2.528 0 0 1-2.52-2.523A2.528 2.528 0 0 1 5.042 10.12a2.527 2.527 0 0 1 2.52 2.522 2.527 2.527 0 0 1-2.52 2.523zm4.313-2.523a2.527 2.527 0 0 1 2.521-2.522 2.527 2.527 0 0 1 2.521 2.522A2.528 2.528 0 0 1 12.896 15.165 2.528 2.528 0 0 1 10.375 12.642zm2.521 4.313a2.528 2.528 0 0 1 2.523-2.52 2.528 2.528 0 0 1 2.523 2.52A2.528 2.528 0 0 1 15.419 19.475a2.528 2.528 0 0 1-2.523-2.52zm4.313 2.523a2.528 2.528 0 0 1 2.523-2.52 2.528 2.528 0 0 1 2.523 2.52A2.528 2.528 0 0 1 19.732 21.988a2.528 2.528 0 0 1-2.523-2.52zm-4.313-9.434a2.528 2.528 0 0 1-2.52-2.523A2.528 2.528 0 0 1 12.896 3.75a2.528 2.528 0 0 1 2.52 2.523 2.528 2.528 0 0 1-2.52 2.523zm4.313-2.523A2.528 2.528 0 0 1 19.732 3.75a2.528 2.528 0 0 1 2.523 2.523A2.528 2.528 0 0 1 19.732 8.796a2.528 2.528 0 0 1-2.523-2.523z"/>
+          </svg>
+          Continue with Slack
+        </Button>
 
         <div className="text-center">
           <p className="text-sm text-muted-foreground">

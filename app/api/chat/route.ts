@@ -1,6 +1,6 @@
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import { smoothStream, stepCountIs, streamText, type CoreMessage } from 'ai';
-import { getCurrentTime } from '@/tools/tool.service';
+import { getCurrentTime, getSlackUserInfo, getSlackWorkspaceUsers, sendSlackMessage, getSlackChannels } from '@/tools/tool.service';
 import { mcpToolsFromSmithery } from '@/lib/mcp';
 import { z } from 'zod';
 import { systemPrompt } from '@/lib/prompts';
@@ -19,22 +19,47 @@ export async function POST(req: Request) {
   const { message : userMessage, conversationId, userId } = await req.json();
 
   // Initialize MCP client
-  const mcpClient = await mcpToolsFromSmithery();
+  // const mcpClient = await mcpToolsFromSmithery();
 
   
 
   // Local tools
-  const localTools = {
-    get_current_time: {
-      description: 'Returns the current UTC date and time as a string.',
-      inputSchema: z.object({}), // no input params
-      execute: async () => await getCurrentTime(),
-    },
-  };
+    const localTools = {
+      get_current_time: {
+        description: 'Returns the current UTC date and time as a string.',
+        inputSchema: z.object({}), // no input params
+        execute: async () => await getCurrentTime(),
+      },
+      get_slack_user_info: {
+        description: 'Returns the current Slack user info as a string.',
+        inputSchema: z.object({}), // no input params
+        execute: async () => await getSlackUserInfo(userId),
+      },
+      get_slack_workspace_users: {
+        description: 'Returns a list of all active users in the Slack workspace.',
+        inputSchema: z.object({}), // no input params
+        execute: async () => await getSlackWorkspaceUsers(userId),
+      },
+      send_slack_message: {
+        description: 'Sends a direct message to a Slack user in the workspace.',
+        inputSchema: z.object({
+          recipient_user_id: z.string().describe('The Slack user ID (e.g., U1234567890) to send the message to'),
+          message: z.string().describe('The message content to send (max 4000 characters)'),
+        }),
+        execute: async (params: { recipient_user_id: string; message: string }) => await sendSlackMessage(userId, params.recipient_user_id, params.message),
+      },
+      get_slack_channels: {
+        description: 'Returns a list of all channels in the Slack workspace.',
+        inputSchema: z.object({
+          include_private: z.boolean().optional().describe('Whether to include private channels (default: false)'),
+        }),
+        execute: async (params: { include_private?: boolean }) => await getSlackChannels(userId, params.include_private || false),
+      },
+    };
 
   // Merge MCP tools with local tools
   const allTools = {
-    ...mcpClient.tools,
+    // ...mcpClient.tools,
     ...localTools,
   };
 
@@ -57,7 +82,7 @@ export async function POST(req: Request) {
       tools: allTools,
       onError: async (error) => {
         console.log("error", error);
-        await mcpClient.close();
+        // await mcpClient.close();
       },
       stopWhen: stepCountIs(5),
       onStepFinish: async (message) => {
@@ -65,7 +90,7 @@ export async function POST(req: Request) {
       },
       onFinish: async (message) => {
         console.log("Streaming finished");
-        await mcpClient.close();
+        // await mcpClient.close();
       },
       experimental_transform : smoothStream({
         chunking : "word",
@@ -76,7 +101,7 @@ export async function POST(req: Request) {
     return result.toUIMessageStreamResponse();
   } catch (error) {
     console.error("Error in chat flow:", error);
-    await mcpClient.close();
+    // await mcpClient.close();
     throw error;
   }
 }
@@ -137,3 +162,4 @@ const buildUserMessage = async (userMessage: string, conversationId: string): Pr
     ];
   }
 }
+
